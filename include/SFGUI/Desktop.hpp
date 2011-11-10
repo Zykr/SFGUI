@@ -85,6 +85,11 @@ class SFGUI_API Desktop {
 		 */
 		void RefreshAll();
 
+		/** Get engine.
+		 * @return Engine.
+		 */
+		Engine& GetEngine();
+
 	private:
 		typedef std::list<std::shared_ptr<Widget> > WidgetsList;
 

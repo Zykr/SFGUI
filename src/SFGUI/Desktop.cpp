@@ -169,4 +169,8 @@ void Desktop::RefreshAll() {
 	}
 }
 
+Engine& Desktop::GetEngine() {
+	return m_context.GetEngine();
+}
+
 }
