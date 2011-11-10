@@ -66,26 +66,6 @@ sf::Vector2f Engine::GetTextMetrics( const sf::String& string, const sf::Font& f
 	return sf::Vector2f( text.GetRect().Width, text.GetRect().Height );
 }
 
-const sf::Font& Engine::LoadFontFromFile( const std::string& filename ) const {
-	if( filename.empty() ) {
-		return sf::Font::GetDefaultFont();
-	}
-
-	FontMap::const_iterator  iter( m_fonts.find( filename ) );
-
-	if( iter != m_fonts.end() ) {
-		return iter->second;
-	}
-
-	sf::Font  font;
-	if( !font.LoadFromFile( filename ) ) {
-		return sf::Font::GetDefaultFont();
-	}
-
-	m_fonts[filename] = font;
-	return m_fonts[filename];
-}
-
 void Engine::ShiftBorderColors( sf::Color& light_color, sf::Color& dark_color, int offset ) const {
 	// TODO: Replace by += and -=. Currently not possible with SFML (see SFML issue #114).
 	light_color.r = static_cast<sf::Uint8>( std::min( 255, static_cast<int>( light_color.r ) + offset ) );
@@ -135,6 +115,10 @@ const std::string* Engine::GetValue( const std::string& property, std::shared_pt
 	}
 
 	return 0;
+}
+
+ResourceManager& Engine::GetResourceManager() const {
+	return m_resource_manager;
 }
 
 }
