@@ -212,8 +212,11 @@ void SampleApp::Run() {
 		while( window.PollEvent( event ) ) {
 			m_desktop.HandleEvent( event );
 
-			if( event.Type == sf::Event::Closed ) {
-				window.Close();
+			if(
+				(event.Type == sf::Event::Closed) ||
+				(event.Type == sf::Event::KeyPressed && event.Key.Code == sf::Keyboard::Escape)
+			) {
+				render_window.Close();
 			}
 		}
 

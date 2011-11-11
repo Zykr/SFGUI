@@ -124,8 +124,11 @@ void Application::Run() {
 		while ( app_window.PollEvent( event ) ) {
 			window->HandleEvent( event );
 
-			if ( event.Type == sf::Event::Closed ) {
-				app_window.Close();
+			if(
+				(event.Type == sf::Event::Closed) ||
+				(event.Type == sf::Event::KeyPressed && event.Key.Code == sf::Keyboard::Escape)
+			) {
+				render_window.Close();
 			}
 		}
 

@@ -37,7 +37,10 @@ int main() {
 			window->HandleEvent( event );
 
 			// Close window : exit
-			if ( event.Type == sf::Event::Closed ) {
+			if(
+				(event.Type == sf::Event::Closed) ||
+				(event.Type == sf::Event::KeyPressed && event.Key.Code == sf::Keyboard::Escape)
+			) {
 				app_window.Close();
 			}
 		}

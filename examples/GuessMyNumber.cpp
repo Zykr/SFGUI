@@ -163,8 +163,8 @@ void GuessMyNumber::Run() {
 	while( render_window.IsOpened() ) {
 		while( render_window.PollEvent( event ) ) {
 			if(
-				(event.Type == sf::Event::KeyPressed && event.Key.Code == sf::Keyboard::Escape) ||
-				event.Type == sf::Event::Closed
+				(event.Type == sf::Event::Closed) ||
+				(event.Type == sf::Event::KeyPressed && event.Key.Code == sf::Keyboard::Escape)
 			) {
 				render_window.Close();
 			}
