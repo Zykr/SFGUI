@@ -56,23 +56,18 @@ class SFGUI_API Container : public Widget {
 		 */
 		float GetBorderWidth() const;
 
-		/** Refresh all children and this container.
-		 * Refreshing means to invalidate and re-request size. This can be useful
-		 * after changing properties during runtime (i.e. AFTER widget
-		 * initialization).
-		 */
-		void RefreshAll();
+		void Refresh() const;
 
 		virtual void HandleEvent( const sf::Event& event );
 
 		/** Used to inform parent that a child has been invalidated
 		 * @param child Widget that was invalidated.
 		 */
-		virtual void HandleChildInvalidate( Widget::Ptr child );
+		virtual void HandleChildInvalidate( Widget::PtrConst child ) const;
 
 		/** Handle changing of absolute position
 		 */
-		virtual void HandleAbsolutePositionChange();
+		virtual void HandleAbsolutePositionChange() const;
 
 	protected:
 		/** Constructor.
@@ -89,7 +84,7 @@ class SFGUI_API Container : public Widget {
 		 */
 		virtual void HandleRemove( Widget::Ptr child );
 
-		virtual void HandleExpose( sf::RenderTarget& target );
+		virtual void HandleExpose( CullingTarget& target ) const;
 
 	private:
 		float m_border_width;

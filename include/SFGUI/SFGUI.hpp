@@ -19,3 +19,5 @@
 #include <SFGUI/Window.hpp>
 #include <SFGUI/ToggleButton.hpp>
 #include <SFGUI/CheckButton.hpp>
+#include <SFGUI/Viewport.hpp>
+#include <SFGUI/ProgressBar.hpp>

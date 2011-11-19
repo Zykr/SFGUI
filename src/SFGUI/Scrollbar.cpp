@@ -12,6 +12,7 @@ Scrollbar::Scrollbar( Adjustment::Ptr adjustment, Orientation orientation ) :
 	m_increase_pressed( false ),
 	m_page_decreasing( 0 ),
 	m_page_increasing( 0 ),
+	m_repeat_wait( true ),
 	m_slider_click_offset( 0 )
 {
 	if( adjustment ) {
@@ -87,8 +88,8 @@ bool Scrollbar::IsIncreaseStepperPressed() const {
 }
 
 
-sf::Drawable* Scrollbar::InvalidateImpl() {
-	return Context::Get().GetEngine().CreateScrollbarDrawable( std::dynamic_pointer_cast<Scrollbar>( shared_from_this() ) );
+RenderQueue* Scrollbar::InvalidateImpl() const {
+	return Context::Get().GetEngine().CreateScrollbarDrawable( std::dynamic_pointer_cast<const Scrollbar>( shared_from_this() ) );
 }
 
 sf::Vector2f Scrollbar::GetRequisitionImpl() const {
@@ -135,6 +136,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 				m_decrease_pressed = true;
 				GetAdjustment()->Decrement();
 				m_change_timer.Reset();
+				m_repeat_wait = true;
 				Invalidate();
 				return;
 			}
@@ -143,6 +145,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 				m_increase_pressed = true;
 				GetAdjustment()->Increment();
 				m_change_timer.Reset();
+				m_repeat_wait = true;
 				Invalidate();
 				return;
 			}
@@ -157,6 +160,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 				m_decrease_pressed = true;
 				GetAdjustment()->Decrement();
 				m_change_timer.Reset();
+				m_repeat_wait = true;
 				Invalidate();
 				return;
 			}
@@ -165,6 +169,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 				m_increase_pressed = true;
 				GetAdjustment()->Increment();
 				m_change_timer.Reset();
+				m_repeat_wait = true;
 				Invalidate();
 				return;
 			}
@@ -179,6 +184,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 					m_page_decreasing = x;
 					GetAdjustment()->DecrementPage();
 					m_change_timer.Reset();
+					m_repeat_wait = true;
 					Invalidate();
 					return;
 				}
@@ -186,6 +192,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 					m_page_increasing = x;
 					GetAdjustment()->IncrementPage();
 					m_change_timer.Reset();
+					m_repeat_wait = true;
 					Invalidate();
 					return;
 				}
@@ -197,6 +204,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 					m_page_decreasing = y;
 					GetAdjustment()->DecrementPage();
 					m_change_timer.Reset();
+					m_repeat_wait = true;
 					Invalidate();
 					return;
 				}
@@ -204,6 +212,7 @@ void Scrollbar::HandleMouseButtonEvent( sf::Mouse::Button button, bool press, in
 					m_page_increasing = y;
 					GetAdjustment()->IncrementPage();
 					m_change_timer.Reset();
+					m_repeat_wait = true;
 					Invalidate();
 					return;
 				}
@@ -273,11 +282,21 @@ void Scrollbar::HandleMouseMoveEvent( int x, int y ) {
 	}
 }
 
-void Scrollbar::HandleExpose( sf::RenderTarget& /*target*/ ) {
+void Scrollbar::HandleExpose( CullingTarget& /*target*/ ) const {
 	float stepper_speed( Context::Get().GetEngine().GetProperty<float>( "StepperSpeed", shared_from_this() ) );
 
 	if( m_change_timer.GetElapsedTime() < static_cast<sf::Uint32>( 1000.f / stepper_speed ) ) {
 		return;
+	}
+
+	if( m_repeat_wait ) {
+		sf::Uint32 stepper_repeat_delay( Context::Get().GetEngine().GetProperty<sf::Uint32>( "StepperRepeatDelay", shared_from_this() ) );
+
+		if( m_change_timer.GetElapsedTime() < stepper_repeat_delay ) {
+			return;
+		}
+
+		m_repeat_wait = false;
 	}
 
 	m_change_timer.Reset();

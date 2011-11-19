@@ -47,9 +47,9 @@ const Container::WidgetsList& Container::GetChildren() const {
 	return m_children;
 }
 
-void Container::HandleExpose( sf::RenderTarget& target ) {
-	WidgetsList::iterator iter( m_children.begin() );
-	WidgetsList::iterator iterend( m_children.end() );
+void Container::HandleExpose( CullingTarget& target ) const {
+	WidgetsList::const_iterator iter( m_children.begin() );
+	WidgetsList::const_iterator iterend( m_children.end() );
 
 	for( ; iter != iterend; ++iter ) {
 		(*iter)->Expose( target );
@@ -66,26 +66,15 @@ float Container::GetBorderWidth() const {
 	return m_border_width;
 }
 
-void Container::RefreshAll() {
-	WidgetsList::iterator w_iter( m_children.begin() );
-	WidgetsList::iterator w_iter_end( m_children.end() );
+void Container::Refresh() const {
+	WidgetsList::const_iterator w_iter( m_children.begin() );
+	WidgetsList::const_iterator w_iter_end( m_children.end() );
 
 	for( ; w_iter != w_iter_end; ++w_iter ) {
-		// If the child is also a container, we'll delegate the call.
-		Container::Ptr container( std::dynamic_pointer_cast<Container>( *w_iter ) );
-
-		if( !container ) {
-			(*w_iter)->Invalidate();
-			(*w_iter)->RequestSize();
-		}
-		else {
-			container->RefreshAll();
-		}
+		(*w_iter)->Refresh();
 	}
 
-	// No need to request size for a container, because it's delegated to the top
-	// anyways when children request size.
-	Invalidate();
+	Widget::Refresh();
 }
 
 void Container::HandleEvent( const sf::Event& event ) {
@@ -129,15 +118,15 @@ void Container::HandleAdd( Widget::Ptr /*child*/ ) {
 void Container::HandleRemove( Widget::Ptr /*child*/ ) {
 }
 
-void Container::HandleChildInvalidate( Widget::Ptr child  ) {
-	Container::Ptr parent = GetParent();
+void Container::HandleChildInvalidate( Widget::PtrConst child  ) const {
+	Container::PtrConst parent = GetParent();
 
 	if( parent ) {
 		parent->HandleChildInvalidate( child );
 	}
 }
 
-void Container::HandleAbsolutePositionChange() {
+void Container::HandleAbsolutePositionChange() const {
 	WidgetsList::const_iterator iter( m_children.begin() );
 	WidgetsList::const_iterator iter_end( m_children.end() );
 

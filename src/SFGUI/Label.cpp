@@ -2,6 +2,8 @@
 #include <SFGUI/Context.hpp>
 #include <SFGUI/Engine.hpp>
 
+#include <SFML/Graphics/Font.hpp>
+
 namespace sfg {
 
 Label::Label( const sf::String& text ) :
@@ -29,14 +31,14 @@ const sf::String& Label::GetText() const {
 	return m_text;
 }
 
-sf::Drawable* Label::InvalidateImpl() {
-	return Context::Get().GetEngine().CreateLabelDrawable( std::dynamic_pointer_cast<Label>( shared_from_this() ) );
+RenderQueue* Label::InvalidateImpl() const {
+	return Context::Get().GetEngine().CreateLabelDrawable( std::dynamic_pointer_cast<const Label>( shared_from_this() ) );
 }
 
 sf::Vector2f Label::GetRequisitionImpl() const {
 	const std::string& font_name( Context::Get().GetEngine().GetProperty<std::string>( "FontName", shared_from_this() ) );
-	const sf::Font& font( Context::Get().GetEngine().LoadFontFromFile( font_name ) );
 	unsigned int font_size( Context::Get().GetEngine().GetProperty<unsigned int>( "FontSize", shared_from_this() ) );
+	const sf::Font& font( *Context::Get().GetEngine().GetResourceManager().GetFont( font_name ) );
 
 	sf::Vector2f metrics = Context::Get().GetEngine().GetTextMetrics( m_text, font, font_size );
 	metrics.y = Context::Get().GetEngine().GetLineHeight( font, font_size );

@@ -124,7 +124,7 @@ const sf::FloatRect& ScrolledWindow::GetContentAllocation() const {
 	return m_content_allocation;
 }
 
-sf::Drawable* ScrolledWindow::InvalidateImpl() {
+RenderQueue* ScrolledWindow::InvalidateImpl() const {
 	if( m_recalc_adjustments ) {
 		RecalculateAdjustments();
 	}
@@ -133,7 +133,7 @@ sf::Drawable* ScrolledWindow::InvalidateImpl() {
 		RecalculateContentAllocation();
 	}
 
-	return Context::Get().GetEngine().CreateScrolledWindowDrawable( std::dynamic_pointer_cast<ScrolledWindow>( shared_from_this() ) );
+	return Context::Get().GetEngine().CreateScrolledWindowDrawable( std::dynamic_pointer_cast<const ScrolledWindow>( shared_from_this() ) );
 }
 
 sf::Vector2f ScrolledWindow::GetRequisitionImpl() const {
@@ -176,7 +176,7 @@ void ScrolledWindow::RecalculateAdjustments() const {
 	m_vertical_scrollbar->Show( IsVerticalScrollbarVisible() );
 }
 
-void ScrolledWindow::RecalculateContentAllocation() {
+void ScrolledWindow::RecalculateContentAllocation() const {
 	float scrollbar_spacing( Context::Get().GetEngine().GetProperty<float>( "ScrollbarSpacing", shared_from_this() ) );
 	float border_width( Context::Get().GetEngine().GetProperty<float>( "BorderWidth", shared_from_this() ) );
 
@@ -256,10 +256,11 @@ void ScrolledWindow::RecalculateContentAllocation() {
 		GetViewport()->AllocateSize( m_content_allocation );
 	}
 
+	m_recalc_adjustments = false;
 	m_recalc_content_allocation = false;
 }
 
-void ScrolledWindow::HandleSizeAllocate( const sf::FloatRect& old_allocation ) {
+void ScrolledWindow::HandleSizeAllocate( const sf::FloatRect& old_allocation ) const {
 	Container::HandleSizeAllocate( old_allocation );
 
 	// A parent caused us to move/resize, have to recalculate everything.
@@ -317,12 +318,10 @@ Viewport::Ptr ScrolledWindow::GetViewport() const {
 	return std::static_pointer_cast<Viewport>( *( --GetChildren().end() ) );
 }
 
-void ScrolledWindow::HandleChildInvalidate( Widget::Ptr child  ) {
-	// A child just got invalidated, have to recalculate everything.
+void ScrolledWindow::HandleChildInvalidate( Widget::PtrConst child  ) const {
+	// A child has been invalidated. Update Scrollbars.
 	m_recalc_adjustments = true;
-	m_recalc_content_allocation = true;
 	Invalidate();
-
 	Container::HandleChildInvalidate( child );
 }
 

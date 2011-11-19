@@ -6,7 +6,8 @@
 namespace sfg {
 
 Desktop::Desktop( const sf::FloatRect& viewport ) :
-	m_view( viewport )
+	m_view( viewport ),
+	m_do_refresh( false )
 {
 }
 
@@ -15,8 +16,18 @@ Desktop::Desktop( const sf::Window& window ) :
 {
 }
 
-void Desktop::Expose( sf::RenderTarget& target ) {
-	RemoveObsoleteChildren();
+void Desktop::Expose( sf::RenderTarget& target ) const {
+	CullingTarget culling_target( target );
+	culling_target.Cull( false );
+
+	Expose( culling_target );
+}
+
+void Desktop::Expose( CullingTarget& target ) const {
+	if( m_do_refresh ) {
+		Refresh();
+		m_do_refresh = false;
+	}
 
 	// Cache current view and set ours.
 	const sf::View& old_view( target.GetView() );
@@ -26,8 +37,8 @@ void Desktop::Expose( sf::RenderTarget& target ) {
 	Context::Activate( m_context );
 
 	// Expose children.
-	WidgetsList::reverse_iterator w_iter( m_children.end() );
-	WidgetsList::reverse_iterator w_iter_end( m_children.begin() );
+	WidgetsList::const_reverse_iterator w_iter( m_children.end() );
+	WidgetsList::const_reverse_iterator w_iter_end( m_children.begin() );
 
 	for( ; w_iter != w_iter_end; ++w_iter ) {
 		(*w_iter)->Expose( target );
@@ -48,6 +59,9 @@ sf::Vector2f Desktop::TransformToLocal( const sf::Vector2f& global ) const {
 }
 
 void Desktop::HandleEvent( const sf::Event& event ) {
+	// Activate context.
+	Context::Activate( m_context );
+
 	RemoveObsoleteChildren();
 
 	sf::Vector2f local_pos;
@@ -68,6 +82,11 @@ void Desktop::HandleEvent( const sf::Event& event ) {
 	}
 
 	for( ; w_iter != w_iter_end; ++w_iter ) {
+		// Skip widget if not visible.
+		if( !(*w_iter)->IsVisible() ) {
+			continue;
+		}
+
 		// If the event is a mouse button press, check if we need to focus another widget.
 		if(
 			new_top_iter == w_iter_end &&
@@ -117,15 +136,21 @@ void Desktop::HandleEvent( const sf::Event& event ) {
 		m_children.erase( new_top_iter );
 		m_children.push_front( widget );
 	}
+
+	// Restore previous context.
+	Context::Deactivate();
 }
 
 void Desktop::Add( std::shared_ptr<Widget> widget ) {
 	m_children.push_front( widget );
+	widget->Refresh();
 }
 
 void Desktop::Remove( std::shared_ptr<Widget> widget ) {
 	// We do this in an isolated method to keep iterators valid.
 	m_obsolete_children.push_back( widget );
+
+	widget->Show( false );
 }
 
 void Desktop::RemoveObsoleteChildren() {
@@ -151,22 +176,35 @@ void Desktop::RemoveObsoleteChildren() {
 	m_obsolete_children.clear();
 }
 
-void Desktop::RefreshAll() {
-	WidgetsList::reverse_iterator w_iter( m_children.end() );
-	WidgetsList::reverse_iterator w_iter_end( m_children.begin() );
+
+void Desktop::Refresh() const {
+	// Activate context.
+	Context::Activate( m_context );
+
+	WidgetsList::const_reverse_iterator w_iter( m_children.end() );
+	WidgetsList::const_reverse_iterator w_iter_end( m_children.begin() );
 
 	for( ; w_iter != w_iter_end; ++w_iter ) {
-		// Check for container/regular widget.
-		std::shared_ptr<Container> container( std::dynamic_pointer_cast<Container>( *w_iter ) );
-
-		if( !container ) {
-			(*w_iter)->Invalidate();
-			(*w_iter)->RequestSize();
-		}
-		else {
-			container->RefreshAll();
-		}
+		(*w_iter)->Refresh();
 	}
+
+	// Restore previous context.
+	Context::Deactivate();
+}
+
+bool Desktop::LoadThemeFromFile( const std::string& filename ) {
+	bool result( m_context.GetEngine().LoadThemeFromFile( filename ) );
+
+	if( !result ) {
+		return false;
+	}
+
+	Refresh();
+	return true;
+}
+
+Engine& Desktop::GetEngine() {
+	return m_context.GetEngine();
 }
 
 }

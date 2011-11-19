@@ -20,11 +20,14 @@ elseif( MSVC_VERSION )
 endif()
 
 set( SFGUI_STATIC false CACHE BOOL "Build static library." )
-set( BUILD_EXAMPLES true CACHE BOOL "Build SFGUI example applications." )
+set( SFGUI_BUILD_EXAMPLES true CACHE BOOL "Build SFGUI examples." )
 
 if( WINDOWS )
 	set( BIN_EXTENSION ".exe" )
 	set( SFML_STATIC false CACHE BOOL "Was SFML built as a static library?" )
+	set( SHARE_TARGET_DIR . )
+else()
+	set( SHARE_TARGET_DIR share/SFGUI )
 endif()
 
 set( SRC_DIR "${PROJECT_SOURCE_DIR}/src/" )
@@ -62,6 +65,7 @@ set(
 	${INC_DIR}/SFGUI/Config.hpp
 	${INC_DIR}/SFGUI/Container.hpp
 	${INC_DIR}/SFGUI/Context.hpp
+	${INC_DIR}/SFGUI/CullingTarget.hpp
 	${INC_DIR}/SFGUI/Desktop.hpp
 	${INC_DIR}/SFGUI/Desktop.inl
 	${INC_DIR}/SFGUI/Engine.hpp
@@ -69,11 +73,18 @@ set(
 	${INC_DIR}/SFGUI/Engines/BREW.hpp
 	${INC_DIR}/SFGUI/Entry.hpp
 	${INC_DIR}/SFGUI/FastDelegate.hpp
+	${INC_DIR}/SFGUI/FileResourceLoader.hpp
 	${INC_DIR}/SFGUI/Label.hpp
 	${INC_DIR}/SFGUI/NonCopyable.hpp
 	${INC_DIR}/SFGUI/Object.hpp
+	${INC_DIR}/SFGUI/Parsers/ThemeParser/Grammar.hpp
+	${INC_DIR}/SFGUI/Parsers/ThemeParser/Parse.hpp
+	${INC_DIR}/SFGUI/ProgressBar.hpp
 	${INC_DIR}/SFGUI/Range.hpp
 	${INC_DIR}/SFGUI/RenderQueue.hpp
+	${INC_DIR}/SFGUI/ResourceLoader.hpp
+	${INC_DIR}/SFGUI/ResourceManager.hpp
+	${INC_DIR}/SFGUI/ResourceManager.inl
 	${INC_DIR}/SFGUI/Scale.hpp
 	${INC_DIR}/SFGUI/Scrollbar.hpp
 	${INC_DIR}/SFGUI/ScrolledWindow.hpp
@@ -94,15 +105,27 @@ set(
 	${SRC_DIR}/SFGUI/CheckButton.cpp
 	${SRC_DIR}/SFGUI/Container.cpp
 	${SRC_DIR}/SFGUI/Context.cpp
+	${SRC_DIR}/SFGUI/CullingTarget.cpp
 	${SRC_DIR}/SFGUI/Desktop.cpp
 	${SRC_DIR}/SFGUI/Engine.cpp
 	${SRC_DIR}/SFGUI/Engines/BREW.cpp
 	${SRC_DIR}/SFGUI/Entry.cpp
+	${SRC_DIR}/SFGUI/FileResourceLoader.cpp
 	${SRC_DIR}/SFGUI/Label.cpp
 	${SRC_DIR}/SFGUI/NonCopyable.cpp
 	${SRC_DIR}/SFGUI/Object.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/Grammar.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/GrammarPredicates.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/GrammarSelector.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/GrammarSimpleSelector.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/GrammarStatement.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/GrammarToken.cpp
+	${SRC_DIR}/SFGUI/Parsers/ThemeParser/Parse.cpp
+	${SRC_DIR}/SFGUI/ProgressBar.cpp
 	${SRC_DIR}/SFGUI/Range.cpp
 	${SRC_DIR}/SFGUI/RenderQueue.cpp
+	${SRC_DIR}/SFGUI/ResourceLoader.cpp
+	${SRC_DIR}/SFGUI/ResourceManager.cpp
 	${SRC_DIR}/SFGUI/Scale.cpp
 	${SRC_DIR}/SFGUI/Scrollbar.cpp
 	${SRC_DIR}/SFGUI/ScrolledWindow.cpp
@@ -120,26 +143,35 @@ set(
 include_directories( ${INC_DIR} )
 include_directories( ${SFML_INCLUDE_DIR} )
 include_directories( ${OPENGL_INCLUDE_DIR} )
+include_directories( "${PROJECT_SOURCE_DIR}/extlibs/libELL/include" )
 
 if( NOT SFGUI_STATIC )
 	add_library( sfgui SHARED ${SOURCES} )
-	
+
 	set_target_properties( sfgui PROPERTIES DEBUG_POSTFIX -d )
-	
+
 	if ( WINDOWS AND COMPILER_GCC )
 		set_target_properties( sfgui PROPERTIES PREFIX "" )
 		set_target_properties( sfgui PROPERTIES IMPORT_SUFFIX ".a" )
 	endif()
 else()
 	add_library( sfgui ${SOURCES} )
-	
+
 	set_target_properties( sfgui PROPERTIES DEBUG_POSTFIX -s-d )
 	set_target_properties( sfgui PROPERTIES RELEASE_POSTFIX -s )
 endif()
 
 set_target_properties( sfgui PROPERTIES COMPILE_DEFINITIONS SFGUI_EXPORTS )
 
-target_link_libraries( sfgui ${SFML_GRAPHICS_LIBRARY} ${SFML_WINDOW_LIBRARY} ${SFML_SYSTEM_LIBRARY} )
+target_link_libraries( sfgui ${SFML_GRAPHICS_LIBRARY} ${SFML_WINDOW_LIBRARY} ${SFML_SYSTEM_LIBRARY} ${OPENGL_gl_LIBRARY} )
+
+### EXAMPLES ###
+
+if( SFGUI_BUILD_EXAMPLES )
+	add_subdirectory( "examples" )
+endif()
+
+### INSTALL TARGETS ###
 
 install(
 	TARGETS sfgui
@@ -154,10 +186,6 @@ install(
 )
 
 install(
-	FILES ${PROJECT_SOURCE_DIR}/cmake/FindSFGUI.cmake
-	DESTINATION ${CMAKE_ROOT}/Modules/
+	FILES README AUTHORS LICENSE
+	DESTINATION ${SHARE_TARGET_DIR}
 )
-
-if( BUILD_EXAMPLES )
-	add_subdirectory( "examples" )
-endif()

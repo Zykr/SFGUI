@@ -2,9 +2,10 @@
 
 #include <SFGUI/Config.hpp>
 #include <SFGUI/Engine.hpp>
-#include <SFGUI/RenderQueue.hpp>
 
 namespace sfg {
+class RenderQueue;
+
 namespace eng {
 
 /** BREW -- Basic Rendering Engine for Widget (reference implementation).
@@ -15,15 +16,16 @@ class SFGUI_API BREW : public Engine {
 		 */
 		BREW();
 
-		sf::Drawable* CreateWindowDrawable( std::shared_ptr<Window> window ) const;
-		sf::Drawable* CreateButtonDrawable( std::shared_ptr<Button> button ) const;
-		sf::Drawable* CreateToggleButtonDrawable( std::shared_ptr<ToggleButton> button ) const;
-		sf::Drawable* CreateCheckButtonDrawable( std::shared_ptr<CheckButton> check ) const;
-		sf::Drawable* CreateLabelDrawable( std::shared_ptr<Label> label ) const;
-		sf::Drawable* CreateEntryDrawable( std::shared_ptr<Entry> entry ) const;
-		sf::Drawable* CreateScaleDrawable( std::shared_ptr<Scale> scale ) const;
-		sf::Drawable* CreateScrollbarDrawable( std::shared_ptr<Scrollbar> scrollbar ) const;
-		sf::Drawable* CreateScrolledWindowDrawable( std::shared_ptr<ScrolledWindow> scrolled_window ) const;
+		RenderQueue* CreateWindowDrawable( std::shared_ptr<const Window> window ) const;
+		RenderQueue* CreateButtonDrawable( std::shared_ptr<const Button> button ) const;
+		RenderQueue* CreateToggleButtonDrawable( std::shared_ptr<const ToggleButton> button ) const;
+		RenderQueue* CreateCheckButtonDrawable( std::shared_ptr<const CheckButton> check ) const;
+		RenderQueue* CreateLabelDrawable( std::shared_ptr<const Label> label ) const;
+		RenderQueue* CreateEntryDrawable( std::shared_ptr<const Entry> entry ) const;
+		RenderQueue* CreateScaleDrawable( std::shared_ptr<const Scale> scale ) const;
+		RenderQueue* CreateScrollbarDrawable( std::shared_ptr<const Scrollbar> scrollbar ) const;
+		RenderQueue* CreateScrolledWindowDrawable( std::shared_ptr<const ScrolledWindow> scrolled_window ) const;
+		RenderQueue* CreateProgressBarDrawable( std::shared_ptr<const ProgressBar> progress_bar ) const;
 
 		/** Utility function to create borders.
 		 * @param rect Rectangle.

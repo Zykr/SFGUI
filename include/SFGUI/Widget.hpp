@@ -3,9 +3,9 @@
 #include <SFGUI/Config.hpp>
 #include <SFGUI/Object.hpp>
 #include <SFGUI/Signal.hpp>
+#include <SFGUI/CullingTarget.hpp>
 
 #include <SFML/Graphics/Drawable.hpp>
-#include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Window/Event.hpp>
 #include <map>
 #include <string>
@@ -67,11 +67,11 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		/** Allocate size.
 		 * @param rect Rect.
 		 */
-		void AllocateSize( const sf::FloatRect& rect );
+		void AllocateSize( const sf::FloatRect& rect ) const;
 
 		/** Request new allocation at parent.
 		 */
-		void RequestSize();
+		void RequestSize() const;
 
 		/** Get allocated size (position and size).
 		 * @return Rect.
@@ -91,23 +91,29 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		 * requisition calculation is re-enabled.
 		 * @param requisition Custom requisition (skip argument to disable custom requisition).
 		 */
-		void SetRequisition( const sf::Vector2f& requisition = sf::Vector2f( 0.f, 0.f ) );
+		void SetRequisition( const sf::Vector2f& requisition = sf::Vector2f( 0.f, 0.f ) ) const;
 
 		/** Set position.
 		 * @param position Position.
 		 */
-		void SetPosition( const sf::Vector2f& position );
+		void SetPosition( const sf::Vector2f& position ) const;
 
 		/** Expose.
 		 * Render widget to given target.
 		 * @param target SFML render target.
 		 */
-		virtual void Expose( sf::RenderTarget& target );
+		virtual void Expose( sf::RenderTarget& target ) const;
+
+		/** Expose.
+		 * Render widget to given target.
+		 * @param target culling target.
+		 */
+		virtual void Expose( CullingTarget& target ) const;
 
 		/** Invalidate widget (prepare internal sf::Drawable).
 		 * Implement InvalidateImpl() for your own code.
 		 */
-		void Invalidate();
+		void Invalidate() const;
 
 		/** Set parent widget.
 		 * Note that the parent must be a subclass of sfg::Container. You mostly
@@ -150,7 +156,7 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 
 		/** Handle changing of absolute position
 		 */
-		virtual void HandleAbsolutePositionChange();
+		virtual void HandleAbsolutePositionChange() const;
 
 		/** Update position of drawable.
 		 */
@@ -175,6 +181,12 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		 * @return Class or empty.
 		 */
 		const std::string& GetClass() const;
+
+		/** Refresh.
+		 * Invalidates the widget, re-requests size and triggers allocation
+		 * handlers.
+		 */
+		virtual void Refresh() const;
 
 		// Signals.
 		Signal OnStateChange; //!< Fired when state changed. (old state)
@@ -206,7 +218,7 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		 * to Invalidate().
 		 * @return Pointer to new drawable -- ownership is taken by caller.
 		 */
-		virtual sf::Drawable* InvalidateImpl();
+		virtual RenderQueue* InvalidateImpl() const;
 
 		/** Requisition implementation (recalculate requisition).
 		 * @return New requisition.
@@ -243,13 +255,13 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		/** Handle size allocations.
 		 * @param old_allocation Previous allocation.
 		 */
-		virtual void HandleSizeAllocate( const sf::FloatRect& old_allocation );
+		virtual void HandleSizeAllocate( const sf::FloatRect& old_allocation ) const;
 
 		/** Handle expose.
 		 * Called every frame usually.
 		 * @param target Render target.
 		 */
-		virtual void HandleExpose( sf::RenderTarget& target );
+		virtual void HandleExpose( CullingTarget& target ) const;
 
 		/** Handle state changes.
 		 * The default behaviour is to accept any state change and invalidate the
@@ -276,10 +288,11 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		virtual void HandleMouseLeave( int x, int y );
 
 		/** Handle mouse click.
+		 * @param button Button.
 		 * @param x Mouse X position.
 		 * @param y Mouse Y position.
 		 */
-		virtual void HandleMouseClick( int x, int y );
+		virtual void HandleMouseClick( sf::Mouse::Button button, int x, int y );
 
 		/** Handle focus change.
 		 * @param focused_widget Widget currently being focused.
@@ -303,14 +316,14 @@ class SFGUI_API Widget : public Object, public std::enable_shared_from_this<Widg
 		bool  m_mouse_in;
 		int  m_mouse_button_down;
 
-		sf::FloatRect  m_allocation;
-		mutable sf::Vector2f   m_requisition;
-		std::unique_ptr<sf::Vector2f> m_custom_requisition;
+		mutable sf::FloatRect m_allocation;
+		mutable sf::Vector2f m_requisition;
+		mutable std::unique_ptr<sf::Vector2f> m_custom_requisition;
 
-		bool  m_invalidated;
-		mutable bool  m_recalc_requisition;
+		mutable bool m_invalidated;
+		mutable bool m_recalc_requisition;
 
-		mutable std::unique_ptr<sf::Drawable>  m_drawable;
+		mutable std::unique_ptr<RenderQueue> m_drawable;
 };
 
 }

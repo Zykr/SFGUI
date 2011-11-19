@@ -78,7 +78,7 @@ class SFGUI_API Entry : public Widget {
 		Signal OnTextChanged; //!< Fired when the text changes.
 
 	protected:
-		sf::Drawable* InvalidateImpl();
+		RenderQueue* InvalidateImpl() const;
 		sf::Vector2f GetRequisitionImpl() const;
 
 	private:
@@ -94,7 +94,7 @@ class SFGUI_API Entry : public Widget {
 
 		/** Recalculate visible string.
 		 */
-		void RecalculateVisibleString();
+		void RecalculateVisibleString() const;
 
 		/** Move cursor.
 		 * @param delta Number of units to move cursor by. Negative to move left. Positive to move right.
@@ -106,20 +106,21 @@ class SFGUI_API Entry : public Widget {
 		virtual void HandleMouseButtonEvent( sf::Mouse::Button button, bool press, int x, int y );
 		virtual void HandleTextEvent( sf::Uint32 character );
 		virtual void HandleKeyEvent( sf::Keyboard::Key key, bool press );
-		virtual void HandleExpose( sf::RenderTarget& target );
+		virtual void HandleExpose( CullingTarget& target ) const;
 		virtual void HandleFocusChange( Widget::Ptr focused_widget );
 		virtual void HandleStateChange( State old_state );
+		virtual void HandleSizeAllocate( const sf::FloatRect& old_allocation ) const;
 
 		// Data structures holding the total content of the Entry and the visible portion of it
 		sf::String m_string;
-		sf::String m_visible_string;
+		mutable sf::String m_visible_string;
 
 		// The offset in the string at which the visible portion starts
-		std::size_t m_visible_offset;
+		mutable std::size_t m_visible_offset;
 
 		std::size_t m_cursor_position;
-		sf::Clock m_cursor_timer;
-		bool m_cursor_status;
+		mutable sf::Clock m_cursor_timer;
+		mutable bool m_cursor_status;
 
 		// The UTF-32 character which hides each character of the string
 		sf::Uint32 m_text_placeholder;

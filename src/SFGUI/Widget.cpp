@@ -19,6 +19,14 @@ Widget::Widget() :
 }
 
 Widget::~Widget() {
+	/*if( m_drawable ) {
+		const RenderQueue::DrawablesVector& drawables = m_drawable->GetDrawables();
+		std::size_t drawables_size = drawables.size();
+
+		for( std::size_t index = 0; index < drawables_size; ++index ) {
+			delete drawables[index].first;
+		}
+	}*/
 }
 
 bool Widget::IsSensitive() const {
@@ -62,7 +70,7 @@ bool Widget::HasFocus( Ptr widget ) {
 	return parent->HasFocus( widget );
 }
 
-void Widget::AllocateSize( const sf::FloatRect& rect ) {
+void Widget::AllocateSize( const sf::FloatRect& rect ) const {
 	sf::FloatRect  oldallocation( m_allocation );
 
 	// Make sure allocation is pixel-aligned.
@@ -71,10 +79,12 @@ void Widget::AllocateSize( const sf::FloatRect& rect ) {
 	m_allocation.Width = std::floor( rect.Width + .5f );
 	m_allocation.Height = std::floor( rect.Height + .5f );
 
-	if( oldallocation.Top == m_allocation.Top &&
-	    oldallocation.Left == m_allocation.Left &&
-	    oldallocation.Width == m_allocation.Width &&
-	    oldallocation.Height == m_allocation.Height ) {
+	if(
+		oldallocation.Top == m_allocation.Top &&
+		oldallocation.Left == m_allocation.Left &&
+		oldallocation.Width == m_allocation.Width &&
+		oldallocation.Height == m_allocation.Height
+	) {
 		// Nothing even changed. Save the hierarchy the trouble.
 		return;
 	}
@@ -86,7 +96,7 @@ void Widget::AllocateSize( const sf::FloatRect& rect ) {
 	Invalidate();
 }
 
-void Widget::RequestSize() {
+void Widget::RequestSize() const {
 	m_recalc_requisition = true;
 	Container::Ptr parent = m_parent.lock();
 
@@ -115,7 +125,13 @@ const sf::FloatRect& Widget::GetAllocation() const {
 	return m_allocation;
 }
 
-void Widget::Expose( sf::RenderTarget& target ) {
+void Widget::Expose( sf::RenderTarget& target ) const {
+	CullingTarget culling_target( target );
+	culling_target.Cull( false );
+	Expose( culling_target );
+}
+
+void Widget::Expose( CullingTarget& target ) const {
 	if( m_invalidated ) {
 		m_invalidated = false;
 
@@ -136,17 +152,21 @@ void Widget::Expose( sf::RenderTarget& target ) {
 	}
 }
 
-void Widget::Invalidate() {
+void Widget::Invalidate() const {
+	if( m_invalidated ) {
+		return;
+	}
+
 	m_invalidated = true;
 
-	Container::Ptr parent = m_parent.lock();
+	Container::PtrConst parent = m_parent.lock();
 
 	if( parent ) {
-		parent->HandleChildInvalidate( shared_from_this() );
+		parent->HandleChildInvalidate( static_cast<Widget::PtrConst>( shared_from_this() ) );
 	}
 }
 
-sf::Drawable* Widget::InvalidateImpl() {
+RenderQueue* Widget::InvalidateImpl() const {
 	return 0;
 }
 
@@ -166,7 +186,7 @@ void Widget::SetParent( Widget::Ptr parent ) {
 	m_parent = cont;
 }
 
-void Widget::SetPosition( const sf::Vector2f& position ) {
+void Widget::SetPosition( const sf::Vector2f& position ) const {
 	sf::FloatRect  oldallocation( GetAllocation() );
 
 	// Make sure allocation is pixel-aligned.
@@ -243,7 +263,7 @@ void Widget::HandleEvent( const sf::Event& event ) {
 
 				// When released inside the widget, the event can be considered a click.
 				if( m_mouse_in ) {
-					HandleMouseClick( event.MouseButton.X, event.MouseButton.Y );
+					HandleMouseClick( event.MouseButton.Button, event.MouseButton.X, event.MouseButton.Y );
 				}
 
 				OnMouseButtonRelease();
@@ -291,11 +311,10 @@ void Widget::SetState( State state ) {
 	State old_state( m_state );
 	m_state = state;
 
-	HandleStateChange( old_state );
-
 	// If HandleStateChange() changed the state, do not call observer, will be
 	// done from there too.
-	if( m_state != state ) {
+	if( m_state != old_state ) {
+		HandleStateChange( old_state );
 		OnStateChange();
 	}
 
@@ -358,7 +377,7 @@ const sf::Vector2f& Widget::GetRequisition() const {
 	return m_requisition;
 }
 
-void Widget::SetRequisition( const sf::Vector2f& requisition ) {
+void Widget::SetRequisition( const sf::Vector2f& requisition ) const {
 	if( requisition.x > 0.f || requisition.y >= 0.f ) {
 		m_custom_requisition.reset( new sf::Vector2f( requisition ) );
 	}
@@ -419,10 +438,10 @@ void Widget::HandleMouseButtonEvent( sf::Mouse::Button /*button*/, bool /*press*
 void Widget::HandleKeyEvent( sf::Keyboard::Key /*key*/, bool /*press*/ ) {
 }
 
-void Widget::HandleSizeAllocate( const sf::FloatRect& /*new_allocation*/ ) {
+void Widget::HandleSizeAllocate( const sf::FloatRect& /*new_allocation*/ ) const {
 }
 
-void Widget::HandleExpose( sf::RenderTarget& /*target*/ ) {
+void Widget::HandleExpose( CullingTarget& /*target*/ ) const {
 }
 
 void Widget::HandleStateChange( State /*old_state*/ ) {
@@ -438,7 +457,7 @@ void Widget::HandleMouseEnter( int /*x*/, int /*y*/ ) {
 void Widget::HandleMouseLeave( int /*x*/, int /*y*/ ) {
 }
 
-void Widget::HandleMouseClick( int /*x*/, int /*y*/ ) {
+void Widget::HandleMouseClick( sf::Mouse::Button /*button*/, int /*x*/, int /*y*/ ) {
 }
 
 void Widget::HandleFocusChange( Widget::Ptr focused_widget ) {
@@ -447,8 +466,26 @@ void Widget::HandleFocusChange( Widget::Ptr focused_widget ) {
 	}
 }
 
-void Widget::HandleAbsolutePositionChange() {
+void Widget::HandleAbsolutePositionChange() const {
 	UpdateDrawablePosition();
+}
+
+void Widget::Refresh() const {
+	sf::FloatRect old_allocation( GetAllocation() );
+
+	RequestSize();
+
+	if(
+		old_allocation.Left == GetAllocation().Left &&
+		old_allocation.Top == GetAllocation().Top &&
+		old_allocation.Width == GetAllocation().Width &&
+		old_allocation.Height == GetAllocation().Height
+	) {
+		HandleAbsolutePositionChange();
+		HandleSizeAllocate( old_allocation );
+	}
+
+	Invalidate();
 }
 
 }
